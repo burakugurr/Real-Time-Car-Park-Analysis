@@ -1,0 +1,120 @@
+version: '3'
+
+services:
+  nifi:
+    image: apache/nifi:latest
+    ports:
+      - "8081:8081"
+    volumes:
+      - ~/document/Nifi/shared-directory:/opt/nifi/nifi-current/ls-targe
+    environment:  
+      - NIFI_WEB_HTTP_PORT=8081
+  clickhouse1:
+    image: clickhouse/clickhouse-server
+    hostname: ch1
+    container_name: ch1
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    volumes:
+      - ./ch1_config/ckeeper_config.xml:/etc/clickhouse-server/config.d/ckeeper_config.xml
+      - ./ch1_config/cluster_definition_config.xml:/etc/clickhouse-server/config.d/cluster_definition_config.xml
+      - ./ch1_config/external_listen_config.xml:/etc/clickhouse-server/config.d/external_listen_config.xml
+      - ./ch1_config/macros_config.xml:/etc/clickhouse-server/config.d/macros_config.xml
+      - ./ch1_config/default_grants_config.xml:/etc/clickhouse-server/users.d/default_grants_config.xml
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  keeper1:
+    image: clickhouse/clickhouse-server
+    hostname: keeper1
+    container_name: keeper1
+    volumes:
+      - ./keeper1_config/external_listen_config.xml:/etc/clickhouse-server/config.d/external_listen_config.xml
+      - ./keeper1_config/keeper1_config.xml:/etc/clickhouse-server/config.d/keeper1_config.xml
+    ports:
+      - "9004:9000"
+      - "9181:9181"
+      - "9234:9234"
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=123456
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8080:8080
+    depends_on:
+      - kafka1
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka0:29092
+      KAFKA_CLUSTERS_1_NAME: secondLocal
+      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka1:29092
+      KAFKA_CLUSTERS_1_METRICS_PORT: 9998
+      DYNAMIC_CONFIG_ENABLED: 'true'
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:3.2.1
+    tmpfs: "/datalog"
+    hostname: zookeeper
+    ports:
+      - '32181:32181'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 32181
+
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.2.1
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "9092:9092"
+      - "9997:9997"
+
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:32181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29092,PLAINTEXT_HOST://192.168.1.149:9092
+      
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29092,PLAINTEXT_HOST://localhost:9092
+
+  #     ####################################################
+      
+  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29092,PLAINTEXT_HOST://192.168.1.149:9092
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  #   ####################################################
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
+
+  kafka-init-topics:
+    image: confluentinc/cp-kafka:7.2.1
+    volumes:
+       - ./data/message.json:/data/message.json
+    depends_on:
+      - kafka1
+    command: "bash -c 'echo Waiting for Kafka to be ready... && \
+               cub kafka-ready -b kafka1:29092 1 30 && \
+               kafka-topics --create --topic carpark1 --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka1:29092 && \
+               kafka-topics --create --topic carpark2 --partitions 2 --replication-factor 1 --if-not-exists --bootstrap-server kafka1:29092 && \
+               kafka-console-producer --bootstrap-server kafka1:29092 -topic second.users < /data/message.json'"
