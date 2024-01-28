@@ -2,8 +2,10 @@ import json
 from flask import Flask
 from faker import Faker
 from faker_vehicle import VehicleProvider
-import Park
 from datetime import datetime
+import os
+print(os.listdir(os.getcwd()))
+import Park
 
 fake = Faker()
 fake.add_provider(VehicleProvider)
@@ -121,4 +123,4 @@ def createCar5():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.1.42', port=5000)
+    app.run(host="0.0.0.0", port=int("5000"), debug=True) 
