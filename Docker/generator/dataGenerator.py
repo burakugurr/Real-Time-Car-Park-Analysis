@@ -2,9 +2,9 @@ import json
 from flask import Flask
 from faker import Faker
 from faker_vehicle import VehicleProvider
-from datetime import datetime
+from datetime import datetime,timedelta
 import os
-print(os.listdir(os.getcwd()))
+import random
 import Park
 
 fake = Faker()
@@ -16,6 +16,11 @@ app = Flask(__name__)
 def hello_world():
     return "<p>Real Time Car Park Analysis</p>"
 
+def serialize_datetime(obj): 
+    if isinstance(obj, datetime): 
+        return obj.isoformat() 
+    raise TypeError("Type not serializable") 
+
 PARK_1 = fake.uuid4()
 PARK_2 = fake.uuid4()
 PARK_3 = fake.uuid4()
@@ -26,6 +31,14 @@ PARK_5 = fake.uuid4()
 def createCar():
     carobj = json.dumps(fake.vehicle_object())
     carobj = json.loads(carobj)
+    
+    days  = random.randint(1, 60)
+    hours = random.randint(9, 20)
+    minutes = random.randint(0, 59)
+    seconds = random.randint(0, 60)
+
+    ts = datetime.now() - timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    
 
     car = Park.CarPark(
         City= fake.city(),
@@ -36,10 +49,10 @@ def createCar():
         Category= carobj['Category'],
         Year = carobj['Year'],
         ID=PARK_1,
-        TS=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        TS=ts
     )
 
-    return json.dumps(car.__dict__)
+    return json.dumps(car.__dict__, indent=4, sort_keys=True, default=serialize_datetime)
 
 
 @app.route("/park-2")
@@ -47,6 +60,14 @@ def createCar2():
     carobj = json.dumps(fake.vehicle_object())
     carobj = json.loads(carobj)
 
+    days  = random.randint(1, 60)
+    hours = random.randint(9, 20)
+    minutes = random.randint(0, 59)
+    seconds = random.randint(0, 60)
+
+    ts = datetime.now() - timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    
+
     car = Park.CarPark(
         City= fake.city(),
         Plate= fake.license_plate(),
@@ -55,17 +76,24 @@ def createCar2():
         Model= carobj['Model'],
         Category= carobj['Category'],
         Year = carobj['Year'],
-        ID=PARK_1,
-        TS=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        ID=PARK_2,
+        TS=ts
     )
 
-    return json.dumps(car.__dict__)
+    return json.dumps(car.__dict__, indent=4, sort_keys=True, default=serialize_datetime)
 
 
 @app.route("/park-3")
 def createCar3():
     carobj = json.dumps(fake.vehicle_object())
     carobj = json.loads(carobj)
+    hours = random.randint(9, 20)
+    minutes = random.randint(0, 59)
+    seconds = random.randint(0, 60)
+
+    days  = random.randint(1, 60)
+    ts = datetime.now() - timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    
 
     car = Park.CarPark(
         City= fake.city(),
@@ -75,17 +103,26 @@ def createCar3():
         Model= carobj['Model'],
         Category= carobj['Category'],
         Year = carobj['Year'],
-        ID=PARK_1,
-        TS=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        ID=PARK_3,
+        TS=ts
     )
 
-    return json.dumps(car.__dict__)
+    return json.dumps(car.__dict__, indent=4, sort_keys=True, default=serialize_datetime)
 
 
 @app.route("/park-4")
 def createCar4():
     carobj = json.dumps(fake.vehicle_object())
     carobj = json.loads(carobj)
+    
+    days  = random.randint(0, 60)
+    hours = random.randint(1, 20)
+    minutes = random.randint(0, 59)
+    seconds = random.randint(0, 60)
+
+    days  = random.randint(1, 60)
+    ts = datetime.now() - timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    
 
     car = Park.CarPark(
         City= fake.city(),
@@ -95,17 +132,25 @@ def createCar4():
         Model= carobj['Model'],
         Category= carobj['Category'],
         Year = carobj['Year'],
-        ID=PARK_1,
-        TS=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        ID=PARK_4,
+        TS=ts
     )
 
-    return json.dumps(car.__dict__)
+    return json.dumps(car.__dict__, indent=4, sort_keys=True, default=serialize_datetime)
 
 
 @app.route("/park-5")
 def createCar5():
     carobj = json.dumps(fake.vehicle_object())
     carobj = json.loads(carobj)
+    
+    days  = random.randint(0, 60)
+    hours = random.randint(9, 20)
+    minutes = random.randint(0, 59)
+    seconds = random.randint(0, 60)
+
+    ts = datetime.now() - timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    
 
     car = Park.CarPark(
         City= fake.city(),
@@ -115,11 +160,11 @@ def createCar5():
         Model= carobj['Model'],
         Category= carobj['Category'],
         Year = carobj['Year'],
-        ID=PARK_1,
-        TS=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        ID=PARK_5,
+        TS=ts
     )
 
-    return json.dumps(car.__dict__)
+    return json.dumps(car.__dict__, indent=4, sort_keys=True, default=serialize_datetime)
 
 
 if __name__ == '__main__':
